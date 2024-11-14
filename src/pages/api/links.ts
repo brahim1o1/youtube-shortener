@@ -25,5 +25,5 @@ export default async function handler(
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
   // Add this temporarily to your /api/links.ts to verify connection:
-console.log('MongoDB URI:', process.env.MONGODB_URI?.substring(0, 20) + '...');
+//console.log('MongoDB URI:', process.env.MONGODB_URI?.substring(0, 20) + '...');
 }
