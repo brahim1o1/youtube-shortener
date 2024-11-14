@@ -37,57 +37,46 @@ export function YouTubeLinkShortener() {
   const fetchLinks = async () => {
     try {
       const response = await fetch('/api/links');
-      if (!response.ok) throw new Error('Failed to fetch links');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch links');
+      }
       const data = await response.json();
       setLinks(data);
     } catch (err) {
       console.error('Error fetching links:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch links');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+  e.preventDefault();
+  setError(null);
+  setIsLoading(true);
 
-    try {
-      const linkService = new LinkService();
-      const { isValid, type } = linkService.isValidYouTubeUrl(inputUrl);
-      
-      if (!isValid) {
-        throw new Error('Please enter a valid YouTube URL');
-      }
+  try {
+    const response = await fetch('/api/shorten', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: inputUrl }),
+    });
 
-      if (type === 'channel') {
-        throw new Error('Channel links are not supported for shortening');
-      }
-
-      if (links.length >= 6) {
-        throw new Error('Free tier limit reached (6 links)');
-      }
-
-      const response = await fetch('/api/shorten', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: inputUrl }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create short link');
-      }
-
-      const newLink = await response.json();
-      setLinks(prevLinks => [...prevLinks, newLink]);
-      setInputUrl('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create short link');
     }
-  };
+
+    const newLink = await response.json();
+    setLinks(prevLinks => [...prevLinks, newLink]);
+    setInputUrl('');
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'An error occurred');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleCopy = async (shortCode: string) => {
     const linkUrl = `https://watchbnd.com/${shortCode}`;

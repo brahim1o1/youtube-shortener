@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
-import dbConnect from '../lib/mongodb';
-import Link from '../models/Link';
+import dbConnect from '@/lib/mongodb';
+import Link from '@/models/Link';
 
 export const getServerSideProps: GetServerSideProps = async ({ params, req }) => {
   await dbConnect();
