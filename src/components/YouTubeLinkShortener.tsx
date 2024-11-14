@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LinkService } from '@/services/LinkService';
-import { Trash2, Copy, ExternalLink } from 'lucide-react';
+import { Trash2, Copy } from 'lucide-react';
 
 interface ShortenedLink {
   _id: string;
@@ -29,7 +28,6 @@ export function YouTubeLinkShortener() {
   const [isLoading, setIsLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
-  // Fetch existing links on component mount
   useEffect(() => {
     fetchLinks();
   }, []);
@@ -50,36 +48,36 @@ export function YouTubeLinkShortener() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setIsLoading(true);
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
-  try {
-    const response = await fetch('/api/shorten', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url: inputUrl }),
-    });
+    try {
+      const response = await fetch('/api/shorten', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: inputUrl }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create short link');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create short link');
+      }
+
+      const newLink = await response.json();
+      setLinks(prevLinks => [...prevLinks, newLink]);
+      setInputUrl('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
     }
-
-    const newLink = await response.json();
-    setLinks(prevLinks => [...prevLinks, newLink]);
-    setInputUrl('');
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'An error occurred');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleCopy = async (shortCode: string) => {
-    const linkUrl = `https://watchbnd.com/${shortCode}`;
+    const linkUrl = `${window.location.origin}/${shortCode}`;
     try {
       await navigator.clipboard.writeText(linkUrl);
       setCopySuccess(shortCode);
@@ -103,11 +101,6 @@ export function YouTubeLinkShortener() {
     } catch (err) {
       console.error('Error deleting link:', err);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
   };
 
   return (
@@ -137,11 +130,15 @@ export function YouTubeLinkShortener() {
 
       <div>
         <h2 className="text-xl font-semibold mb-4 text-gray-900">My Links ({links.length}/6)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {links.map((link) => (
             <div 
               key={link.shortCode} 
-              className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200"
+              className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200"
+              style={{
+                background: 'linear-gradient(white, white) padding-box, linear-gradient(45deg, #2563eb, #1e3a8a) border-box',
+                border: '2px solid transparent'
+              }}
             >
               <div className="aspect-w-16 aspect-h-9 relative">
                 <a 
@@ -162,53 +159,39 @@ export function YouTubeLinkShortener() {
                   )}
                 </a>
               </div>
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      watchbnd.com/{link.shortCode}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Created: {formatDate(link.createdAt)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <a 
+                    href={`/${link.shortCode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-gray-900 hover:text-blue-500 transition-colors duration-200"
+                  >
+                    watchbnd/{link.shortCode}
+                  </a>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    {link.views.count} views
+                  </span>
+                  <div className="flex gap-1">
                     <button
                       onClick={() => handleCopy(link.shortCode)}
-                      className="p-1.5 text-gray-600 hover:text-blue-500 rounded-full hover:bg-blue-50 transition-colors duration-200"
+                      className="text-xs p-1 text-gray-600 hover:text-blue-500 rounded transition-colors duration-200"
                       title="Copy link"
                     >
-                      <Copy size={16} />
+                      <Copy size={14} />
                       {copySuccess === link.shortCode && (
-                        <span className="absolute ml-6 text-green-500 text-xs">Copied!</span>
+                        <span className="absolute ml-1 text-green-500">✓</span>
                       )}
                     </button>
-                    <a
-                      href={link.originalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 text-gray-600 hover:text-blue-500 rounded-full hover:bg-blue-50 transition-colors duration-200"
-                      title="Open original"
-                    >
-                      <ExternalLink size={16} />
-                    </a>
                     <button
                       onClick={() => handleDelete(link.shortCode)}
-                      className="p-1.5 text-gray-600 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors duration-200"
+                      className="text-xs p-1 text-gray-600 hover:text-blue-500 rounded transition-colors duration-200"
                       title="Delete link"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
-                      {link.views.count.toLocaleString()}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      views
-                    </span>
                   </div>
                 </div>
               </div>
